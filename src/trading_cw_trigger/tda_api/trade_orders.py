@@ -1,10 +1,8 @@
 import os
-
 from tda import auth
+from src.trading_cw_trigger.lib import config
 
-from lib import config
-
-token_path = os.path.join(os.path.dirname(__file__), "lib", "token.json")
+token_path = os.path.join(os.path.dirname(__file__), "../lib", "token.json")
 c = auth.client_from_token_file(token_path, config.api_key)
 
 
