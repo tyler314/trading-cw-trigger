@@ -1,34 +1,37 @@
 import datetime
 from enum import Enum
-from src.trading_cw_trigger.utils.common_utils import transform_ticker, TradingPlatforms
-from trading_cw_trigger.tda_api.trade_orders import option_chain
-from src.trading_cw_trigger.dto.stock import Stock
+from dataclasses import dataclass
+from utils.common_utils import transform_ticker, TradingPlatforms
+from tda_api.broker import option_chain
+from dto.stock import Stock
 
-CONSECUTIVE_DAYS = 3
 
-
-class OptionAttribute(Enum):
+class OrderType(Enum):
     CREDIT = "NET_CREDIT"
     DEBIT = "NET_DEBIT"
+
+class Instruction(Enum):
     BUY_TO_OPEN = "BUY_TO_OPEN"
-    BUY_TO_CLOSE = "BUY_TO_CLOSE"
     SELL_TO_OPEN = "SELL_TO_OPEN"
+    BUY_TO_CLOSE = "BUY_TO_CLOSE"
     SELL_TO_CLOSE = "SELL_TO_CLOSE"
 
 
 class VerticalSpread:
     def __init__(
         self,
-        stock: Stock,
+        ticker: str,
         quantity: int,
-        order_type: OptionAttribute,
+        price: float,
+        order_type: OrderType,
         expiration_date: datetime.date = None,
         dte: int = 1,
     ):
         self.order_type = order_type
         self.dte = dte
-        self.stock = stock
+        self.stock = Stock(ticker)
         self.quantity = quantity
+        self.price = price
         if expiration_date is None:
             self.expiration_date = self._get_expiration_date()
         else:
@@ -37,18 +40,6 @@ class VerticalSpread:
             self.put_map,
             self.call_map,
         ) = self._get_put_and_call_maps()  # maps strike-price -> metadata
-
-    def _are_consecutive_red_days(self):
-        for i in range(CONSECUTIVE_DAYS):
-            if self.stock.candles[i].close >= self.stock.candles[i].open:
-                return False
-        return True
-
-    def _are_consecutive_green_days(self):
-        for i in range(CONSECUTIVE_DAYS):
-            if self.stock.candles[i].open >= self.stock.candles[i].close:
-                return False
-        return True
 
     def _get_expiration_date(self):
         day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
@@ -72,5 +63,10 @@ class VerticalSpread:
                 break
         return put_option, call_option
 
-    def execute_by_strike_price(self, strike: str):
-        pass
+
+
+@dataclass
+class OptionLeg:
+    symbol: str
+    instruction: Instruction
+    quantity: int

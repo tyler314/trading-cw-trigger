@@ -1,10 +1,15 @@
-from trading_cw_trigger.dto.stock import Stock
-from dto.option import VerticalSpread, OptionAttribute
+import os
+import sys
+
+from dto.option import VerticalSpread, OrderType
+
+sys.path.append(os.getcwd())
 
 TICKER = "SPX"
 
 
 def main():
-    stock = Stock(TICKER)
-    strategy = VerticalSpread(stock, 1, OptionAttribute.CREDIT)
-    strategy.execute_by_strike_price(100)
+    return VerticalSpread(TICKER, 1, 0.5, OrderType.CREDIT)
+
+if __name__ == "__main__":
+    main()

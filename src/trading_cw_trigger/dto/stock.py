@@ -1,10 +1,10 @@
 import os
 from tda import auth
-from src.trading_cw_trigger.lib import config
+from lib import config
 import yfinance as yf
 import json
-from candle import Candle
-from src.trading_cw_trigger.utils.common_utils import std_to_tda, std_to_yf
+from dto.candle import Candle
+from utils.common_utils import std_to_tda, std_to_yf
 
 token_path = os.path.join(os.path.dirname(__file__), "../lib", "token.json")
 c = auth.client_from_token_file(token_path, config.api_key)
@@ -48,7 +48,8 @@ class Stock:
             + "}"
         )
         last_quote = json.loads(last_quote_str)
-        self.candles[0].close = last_quote["close"]
+        # TODO: Test this during market hours
+        self.most_recent_price = last_quote["close"]
         for candle in self.candles:
             self.atr += candle.daily_range
         self.atr /= ATR_TIME_FRAME
