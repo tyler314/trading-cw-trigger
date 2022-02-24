@@ -1,15 +1,17 @@
 import os
 import sys
 
-from dto.option import VerticalSpread, OrderType
+from dto.strategy import Dte1
+from utils.common_utils import OrderType
 
 sys.path.append(os.getcwd())
 
-TICKER = "SPX"
+TICKER = "AAPL"
 
 
-def main():
-    return VerticalSpread(TICKER, 1, 0.5, OrderType.CREDIT)
+def main(ticker):
+    return Dte1(ticker, 1, OrderType.CREDIT)
+
 
 if __name__ == "__main__":
     main()
