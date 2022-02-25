@@ -1,0 +1,2 @@
+tda-api>=1.5.2
+yfinance>=0.1.70

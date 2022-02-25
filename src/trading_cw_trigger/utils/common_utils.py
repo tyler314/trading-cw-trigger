@@ -38,6 +38,7 @@ class AssetType(Enum):
 class OptionType(Enum):
     CALL = "CALL"
     PUT = "PUT"
+    NO_OP = "NO_OP"
 
 
 @dataclass
