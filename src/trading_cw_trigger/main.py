@@ -9,9 +9,11 @@ sys.path.append(os.getcwd())
 TICKER = "AAPL"
 
 
-def main(ticker):
-    return Dte1(ticker, 1, OrderType.CREDIT)
+def main(ticker, derp):
+    return Dte1(
+        ticker=ticker, quantity=1, order_type=OrderType.CREDIT, buying_power=derp
+    )
 
 
 if __name__ == "__main__":
-    main(TICKER)
+    main(TICKER, 1)

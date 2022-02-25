@@ -80,7 +80,7 @@ class Dte1(Strategy):
         if self._short_leg is None:
             metadata = None
             if self._option_type == OptionType.CALL:
-                metadata = self.vs.put_map[str(self._short_leg_strike)][0]
+                metadata = self.vs.call_map[str(self._short_leg_strike)][0]
             elif self._option_type == OptionType.PUT:
                 metadata = self.vs.put_map[str(self._short_leg_strike)][0]
             self._short_leg = OptionLeg(
@@ -96,13 +96,9 @@ class Dte1(Strategy):
         if self._long_leg is None:
             metadata = None
             if self._option_type == OptionType.CALL:
-                metadata = self.vs.put_map[
-                    str(self._short_leg_strike + self.SPREAD_WIDTH)
-                ][0]
+                metadata = self.vs.call_map[str(self._long_leg_strike)][0]
             if self._option_type == OptionType.PUT:
-                metadata = self.vs.put_map[
-                    str(self._short_leg_strike - self.SPREAD_WIDTH)
-                ][0]
+                metadata = self.vs.put_map[str(self._long_leg_strike)][0]
             self._long_leg = OptionLeg(
                 symbol=metadata["symbol"],
                 instruction=Instruction.BUY_TO_OPEN,

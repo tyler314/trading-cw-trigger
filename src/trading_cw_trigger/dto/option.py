@@ -29,7 +29,7 @@ class VerticalSpread:
     def _get_expiration_date(self) -> str:
         day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
         # return day.strftime("%Y-%m-%d")  # YYYY-MM-DD format
-        return "2022-02-25"
+        return "2022-02-28"
 
     def _get_put_and_call_maps(self) -> (dict, dict):
         options = option_chain(
