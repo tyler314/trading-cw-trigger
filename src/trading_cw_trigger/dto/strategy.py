@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from dto.option import VerticalSpread
+import datetime
+from dto.options import VerticalSpread
 from utils.common_utils import OrderType, Instruction, AssetType, OptionLeg, OptionType
 from tda_api.broker import place_option_spread_order
-
 
 ROUNDING_PRECISION = 0.05
 
@@ -44,10 +44,9 @@ class Strategy(ABC):
 
 
 class Dte1(Strategy):
-    CONSECUTIVE_DAYS = 3
+    CONSECUTIVE_DAYS = 1
     ATR_MULTIPLIER = 1.4
-    DELTA = 10
-    SPREAD_WIDTH = 10
+    DTE = 1
 
     def __init__(
         self,
@@ -56,10 +55,13 @@ class Dte1(Strategy):
         order_type: OrderType = OrderType.CREDIT,
         buying_power: int = 500,
     ):
-        self.vs = VerticalSpread(ticker, quantity, order_type)
         self._long_leg = None
         self._short_leg = None
         self.buying_power = buying_power
+        self.dte = self._get_actual_dte(self.DTE)
+        self.vs = VerticalSpread(
+            ticker, quantity, order_type, self._get_expiration_date()
+        )
         self._option_type = self._get_option_type()
         (
             self._short_leg_strike,
@@ -125,6 +127,18 @@ class Dte1(Strategy):
                 short_leg=self.short_leg,
             )
 
+    def _get_actual_dte(self, dte) -> int:
+        def is_friday():
+            return datetime.date.today().weekday() == 4
+
+        if is_friday():
+            dte += 2
+        return dte
+
+    def _get_expiration_date(self) -> datetime:
+        day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
+        return day  # "2022-02-28"
+
     def _calculate_price(self) -> float:
         if self._option_type == OptionType.NO_OP:
             return -1
@@ -143,13 +157,13 @@ class Dte1(Strategy):
 
     def _get_option_type(self):
         def consecutive_red_days() -> bool:
-            for i in range(1):
+            for i in range(self.CONSECUTIVE_DAYS):
                 if self.vs.stock.candles[i].close >= self.vs.stock.candles[i].open:
                     return False
             return True
 
         def consecutive_green_days() -> bool:
-            for i in range(1):
+            for i in range(self.CONSECUTIVE_DAYS):
                 if self.vs.stock.candles[i].open >= self.vs.stock.candles[i].close:
                     return False
             return True
@@ -214,25 +228,3 @@ class Dte1(Strategy):
             strike_index=short_strike_index,
             short_strike=short_leg_strike,
         )
-
-    # def _calc_short_leg_strike(self) -> float:
-    #     if self._option_type == OptionType.CALL:
-    #         return (
-    #             (
-    #                 (
-    #                     self.vs.stock.candles[0].close
-    #                     + self.vs.stock.atr * self.ATR_MULTIPLIER
-    #                 )
-    #                 // 10
-    #             )
-    #             * 10
-    #         ) + self.DELTA
-    #     elif self._option_type == OptionType.PUT:
-    #         return (
-    #             (
-    #                 self.vs.stock.candles[0].close
-    #                 - self.vs.stock.atr * self.ATR_MULTIPLIER
-    #             )
-    #             // 10
-    #         ) * 10 - self.DELTA
-    #     return -1

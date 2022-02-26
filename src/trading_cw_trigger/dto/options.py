@@ -10,26 +10,16 @@ class VerticalSpread:
         ticker: str,
         quantity: int,
         order_type: OrderType,
-        expiration_date: datetime.date = None,
-        dte: int = 1,
+        expiration_date: datetime,
     ):
         self.order_type = order_type
-        self.dte = dte
         self.stock = Stock(ticker)
         self.quantity = quantity
-        if expiration_date is None:
-            self.expiration_date = self._get_expiration_date()
-        else:
-            self.expiration_date = expiration_date.strftime("%Y-%m-%d")
+        self.expiration_date = expiration_date.strftime("%Y-%m-%d")
         (
             self.put_map,
             self.call_map,
         ) = self._get_put_and_call_maps()  # maps strike-price -> metadata
-
-    def _get_expiration_date(self) -> str:
-        day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
-        # return day.strftime("%Y-%m-%d")  # YYYY-MM-DD format
-        return "2022-02-28"
 
     def _get_put_and_call_maps(self) -> (dict, dict):
         options = option_chain(

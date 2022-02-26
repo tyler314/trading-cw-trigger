@@ -10,4 +10,4 @@ class Candle:
 
     @property
     def daily_range(self) -> float:
-        return self.high - self.low
+        return round(self.high - self.low, 2)
