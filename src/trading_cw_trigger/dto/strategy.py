@@ -46,7 +46,7 @@ class Strategy(ABC):
 class Dte1(Strategy):
     CONSECUTIVE_DAYS = 1
     ATR_MULTIPLIER = 1.4
-    DTE = 1
+    _DTE = 1
 
     def __init__(
         self,
@@ -58,7 +58,6 @@ class Dte1(Strategy):
         self._long_leg = None
         self._short_leg = None
         self.buying_power = buying_power
-        self.dte = self._get_actual_dte(self.DTE)
         self.vs = VerticalSpread(
             ticker, quantity, order_type, self._get_expiration_date()
         )
@@ -127,13 +126,14 @@ class Dte1(Strategy):
                 short_leg=self.short_leg,
             )
 
-    def _get_actual_dte(self, dte) -> int:
+    @property
+    def dte(self) -> int:
         def is_friday():
             return datetime.date.today().weekday() == 4
 
         if is_friday():
-            dte += 2
-        return dte
+            return self._DTE + 2
+        return self._DTE
 
     def _get_expiration_date(self) -> datetime:
         day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
