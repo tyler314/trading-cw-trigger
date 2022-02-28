@@ -119,7 +119,7 @@ class Dte1(Strategy):
         return self.vs.quantity
 
     def execute(self) -> dict:
-        response = {"code": "bad", "oder_body": "Null"}
+        response = {"code": "bad", "order_body": "Null"}
         if self._option_type != OptionType.NO_OP:
             response = self._broker.place_option_spread_order(
                 order_type=self.order_type,
