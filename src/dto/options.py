@@ -1,7 +1,7 @@
 import datetime
 
 from dto.stock import Stock
-from tda_api.broker import option_chain
+from tda_api.broker import Broker
 from utils.common_utils import transform_ticker, TradingPlatforms, OrderType
 import logging
 import watchtower
@@ -19,6 +19,7 @@ class VerticalSpread:
         order_type: OrderType,
         expiration_date: datetime,
     ):
+        self._broker = Broker()
         self.order_type = order_type
         self.stock = Stock(ticker)
         self.quantity = quantity
@@ -29,11 +30,13 @@ class VerticalSpread:
         ) = self._get_put_and_call_maps()  # maps strike-price -> metadata
 
     def _get_put_and_call_maps(self) -> (dict, dict):
-        options = option_chain(
+        options = self._broker.option_chain(
             transform_ticker(self.stock.ticker, TradingPlatforms.TDA)
         )
         if options.get("status") == "FAILED":
-            msg = "Call to TDA's option chain api failed, with ticker: {}".format(self.stock.ticker)
+            msg = "Call to TDA's option chain api failed, with ticker: {}".format(
+                self.stock.ticker
+            )
             logging.error(msg)
             raise RuntimeError(msg)
         put_exp_map = options["putExpDateMap"]
@@ -49,7 +52,9 @@ class VerticalSpread:
                 call_option = call_exp_map[key]
                 break
         if not put_option or not call_option:
-            msg = "No options available with an expiration date of {}".format(self.expiration_date)
+            msg = "No options available with an expiration date of {}".format(
+                self.expiration_date
+            )
             logging.error(msg)
             raise RuntimeError(msg)
         return put_option, call_option

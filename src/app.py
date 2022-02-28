@@ -1,5 +1,11 @@
 from dto.strategy import Dte1
 from utils.common_utils import OrderType
+import watchtower
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
 def lambda_handler(event=None, context=None):
@@ -24,19 +30,13 @@ def lambda_handler(event=None, context=None):
         Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
 
-    return_code = {
-        "statusCode": 200,
-        "body": '"message": "SUCCESS"'
-    }
     try:
         strategy = Dte1(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500)
-        print(strategy.execute())
+        response = strategy.execute()
+        logging.info(str(response))
     except Exception as e:
-        return_code["statusCode"] = 400
-        return_code["body"] = '"message": "{}"'.format(e)
-
-    return return_code
+        logging.error(e)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     lambda_handler()

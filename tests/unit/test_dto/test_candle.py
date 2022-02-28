@@ -15,7 +15,9 @@ class TestCandle(unittest.TestCase):
                 high=max(open_price, close_close),
                 low=min(open_price, close_close),
             )
-            self.assertEqual(candle.daily_range, round(abs(candle.high - candle.low), 2))
+            self.assertEqual(
+                candle.daily_range, round(abs(candle.high - candle.low), 2)
+            )
 
 
 if __name__ == "__main__":

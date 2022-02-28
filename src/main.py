@@ -10,9 +10,7 @@ TICKER = "AAPL"
 
 
 def main(ticker, derp):
-    return Dte1(
-        ticker=ticker, order_type=OrderType.CREDIT, buying_power=derp
-    )
+    return Dte1(ticker=ticker, order_type=OrderType.CREDIT, buying_power=derp)
 
 
 if __name__ == "__main__":
