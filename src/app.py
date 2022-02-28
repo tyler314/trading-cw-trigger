@@ -29,7 +29,7 @@ def lambda_handler(event=None, context=None):
         "body": '"message": "SUCCESS"'
     }
     try:
-        strategy = Dte1(ticker="SPX", quantity=1, order_type=OrderType.CREDIT, buying_power=500)
+        strategy = Dte1(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500)
         print(strategy.execute())
     except Exception as e:
         return_code["statusCode"] = 400

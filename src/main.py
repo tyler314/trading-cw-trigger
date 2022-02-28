@@ -11,7 +11,7 @@ TICKER = "AAPL"
 
 def main(ticker, derp):
     return Dte1(
-        ticker=ticker, quantity=1, order_type=OrderType.CREDIT, buying_power=derp
+        ticker=ticker, order_type=OrderType.CREDIT, buying_power=derp
     )
 
 

@@ -10,7 +10,7 @@ ROUNDING_PRECISION = 0.05
 
 class Strategy(ABC):
     @abstractmethod
-    def execute(self):
+    def execute(self) -> None:
         pass
 
     @property
@@ -48,11 +48,11 @@ class Dte1(Strategy):
     CONSECUTIVE_DAYS = 1
     ATR_MULTIPLIER = 1.4
     _DTE = 1
+    _QUANTITY = 1
 
     def __init__(
         self,
         ticker: str = "SPX",
-        quantity: int = 1,
         order_type: OrderType = OrderType.CREDIT,
         buying_power: int = 500,
     ):
@@ -60,7 +60,7 @@ class Dte1(Strategy):
         self._short_leg = None
         self.buying_power = buying_power
         self.vs = VerticalSpread(
-            ticker, quantity, order_type, self._get_expiration_date()
+            ticker, self._QUANTITY, order_type, self._get_expiration_date()
         )
         self._option_type = self._get_option_type()
         (
@@ -117,7 +117,7 @@ class Dte1(Strategy):
     def quantity(self) -> int:
         return self.vs.quantity
 
-    def execute(self):
+    def execute(self) -> None:
         response = {"code": "bad", "oder_body": "Null"}
         if self._option_type != OptionType.NO_OP:
             response = place_option_spread_order(

@@ -1,7 +1,14 @@
 import datetime
-from utils.common_utils import transform_ticker, TradingPlatforms, OrderType
-from tda_api.broker import option_chain
+
 from dto.stock import Stock
+from tda_api.broker import option_chain
+from utils.common_utils import transform_ticker, TradingPlatforms, OrderType
+import logging
+import watchtower
+
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
 class VerticalSpread:
@@ -25,6 +32,10 @@ class VerticalSpread:
         options = option_chain(
             transform_ticker(self.stock.ticker, TradingPlatforms.TDA)
         )
+        if options.get("status") == "FAILED":
+            msg = "Call to TDA's option chain api failed, with ticker: {}".format(self.stock.ticker)
+            logging.error(msg)
+            raise RuntimeError(msg)
         put_exp_map = options["putExpDateMap"]
         call_exp_map = options["callExpDateMap"]
         put_option = None
@@ -37,4 +48,8 @@ class VerticalSpread:
             if self.expiration_date == key[: len(self.expiration_date)]:
                 call_option = call_exp_map[key]
                 break
+        if not put_option or not call_option:
+            msg = "No options available with an expiration date of {}".format(self.expiration_date)
+            logging.error(msg)
+            raise RuntimeError(msg)
         return put_option, call_option
