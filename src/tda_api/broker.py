@@ -49,6 +49,6 @@ def place_option_spread_order(
             },
         ],
     }
-    # c.place_order(config.account_id, order_body)
-    # return {"code": "ok"}
-    return order_body
+    c.place_order(config.account_id, order_body)
+    return {"code": "ok", "order_body": str(order_body)}
+

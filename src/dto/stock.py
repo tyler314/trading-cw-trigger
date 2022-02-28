@@ -1,6 +1,7 @@
 import os
 from tda import auth
 from lib import config
+from utils.common_utils import transform_ticker, TradingPlatforms
 import yfinance as yf
 from dto.candle import Candle
 
@@ -18,7 +19,7 @@ class Stock:
 
     def _get_candles(self) -> list:
         candles = []
-        data = yf.Ticker(self.ticker).history(
+        data = yf.Ticker(transform_ticker(self.ticker, TradingPlatforms.YAHOO)).history(
             period=str(Stock.ATR_TIME_FRAME_DAYS) + "d"
         )
         for i in range(1, self.ATR_TIME_FRAME_DAYS + 1):

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import datetime
+import pytz
 from dto.options import VerticalSpread
 from utils.common_utils import OrderType, Instruction, AssetType, OptionLeg, OptionType
 from tda_api.broker import place_option_spread_order
@@ -117,14 +118,16 @@ class Dte1(Strategy):
         return self.vs.quantity
 
     def execute(self):
+        response = {"code": "bad", "oder_body": "Null"}
         if self._option_type != OptionType.NO_OP:
-            return place_option_spread_order(
+            response = place_option_spread_order(
                 order_type=self.order_type,
                 price=self.price,
                 asset_type=self.asset_type,
                 long_leg=self.long_leg,
                 short_leg=self.short_leg,
             )
+        print(response)
 
     @property
     def dte(self) -> int:
@@ -136,7 +139,7 @@ class Dte1(Strategy):
         return self._DTE
 
     def _get_expiration_date(self) -> datetime:
-        day = datetime.date.today() + datetime.timedelta(hours=24 * self.dte)
+        day = datetime.datetime.now(pytz.timezone('US/Eastern')) + datetime.timedelta(hours=24 * self.dte)
         return day  # "2022-02-28"
 
     def _calculate_price(self) -> float:
@@ -197,7 +200,6 @@ class Dte1(Strategy):
                             return float(strike_prices[j + 1])
                         return float(strike_prices[j])
             return -1
-
         short_leg_strike = -1
         rough_strike = -1
         strike_prices = list()
