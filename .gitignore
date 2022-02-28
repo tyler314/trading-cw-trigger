@@ -1,3 +1,5 @@
 .idea/
 .aws-sam/
 __pycache__/
+lib/
+venv/
