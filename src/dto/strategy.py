@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import datetime
-import pytz
+from pytz import timezone
 from dto.options import VerticalSpread
 from utils.common_utils import OrderType, Instruction, AssetType, OptionLeg, OptionType
 from tda_api.broker import Broker
@@ -11,36 +11,6 @@ ROUNDING_PRECISION = 0.05
 class Strategy(ABC):
     @abstractmethod
     def execute(self) -> dict:
-        pass
-
-    @property
-    @abstractmethod
-    def order_type(self) -> OrderType:
-        pass
-
-    @property
-    @abstractmethod
-    def price(self) -> float:
-        pass
-
-    @property
-    @abstractmethod
-    def long_leg(self) -> OptionLeg:
-        pass
-
-    @property
-    @abstractmethod
-    def short_leg(self) -> OptionLeg:
-        pass
-
-    @property
-    @abstractmethod
-    def asset_type(self) -> AssetType:
-        pass
-
-    @property
-    @abstractmethod
-    def quantity(self) -> int:
         pass
 
 
@@ -57,10 +27,10 @@ class Dte1(Strategy):
         buying_power: int = 500,
     ):
         self._broker = Broker()
-        self._long_leg = None
-        self._short_leg = None
-        self.buying_power = buying_power
-        self.vs = VerticalSpread(
+        self._long_leg = self._get_long_leg()
+        self._short_leg = self._get_short_leg()
+        self._buying_power = buying_power
+        self._vs = VerticalSpread(
             ticker, self._QUANTITY, order_type, self._get_expiration_date()
         )
         self._option_type = self._get_option_type()
@@ -70,78 +40,71 @@ class Dte1(Strategy):
         ) = self._calc_short_and_long_leg_strikes()
         self._price = self._calculate_price()
 
-    @property
-    def order_type(self) -> OrderType:
-        return self.vs.order_type
-
-    @property
-    def price(self) -> float:
-        return self._price
-
-    @property
-    def short_leg(self) -> OptionLeg:
-        if self._short_leg is None:
-            metadata = None
-            if self._option_type == OptionType.CALL:
-                metadata = self.vs.call_map[str(self._short_leg_strike)][0]
-            elif self._option_type == OptionType.PUT:
-                metadata = self.vs.put_map[str(self._short_leg_strike)][0]
-            self._short_leg = OptionLeg(
-                symbol=metadata["symbol"],
-                instruction=Instruction.SELL_TO_OPEN,
-                quantity=1,
-                metadata=metadata,
-            )
-        return self._short_leg
-
-    @property
-    def long_leg(self) -> OptionLeg:
-        if self._long_leg is None:
-            metadata = None
-            if self._option_type == OptionType.CALL:
-                metadata = self.vs.call_map[str(self._long_leg_strike)][0]
-            if self._option_type == OptionType.PUT:
-                metadata = self.vs.put_map[str(self._long_leg_strike)][0]
-            self._long_leg = OptionLeg(
-                symbol=metadata["symbol"],
-                instruction=Instruction.BUY_TO_OPEN,
-                quantity=1,
-                metadata=metadata,
-            )
-        return self._long_leg
-
-    @property
-    def asset_type(self) -> AssetType:
-        return AssetType.OPTION
-
-    @property
-    def quantity(self) -> int:
-        return self.vs.quantity
-
     def execute(self) -> dict:
         response = {"code": "bad", "order_body": "Null"}
         if self._option_type != OptionType.NO_OP:
             response = self._broker.place_option_spread_order(
-                order_type=self.order_type,
-                price=self.price,
-                asset_type=self.asset_type,
-                long_leg=self.long_leg,
-                short_leg=self.short_leg,
+                order_type=self._vs.order_type,
+                price=self._price,
+                asset_type=self._asset_type,
+                long_leg=self._long_leg,
+                short_leg=self._short_leg,
             )
         return response
 
     @property
-    def dte(self) -> int:
-        def is_friday():
+    def _adjusted_atr_multiplier(self):
+        red_cnt = self._get_consecutive_red_days()
+        green_cnt = self._get_consecutive_green_days()
+        if 0 < red_cnt < 3:
+            return self.ATR_MULTIPLIER + 0.4
+        elif 0 < green_cnt < 3:
+            return self.ATR_MULTIPLIER + 0.1
+        return self.ATR_MULTIPLIER
+
+    @property
+    def _asset_type(self) -> AssetType:
+        return AssetType.OPTION
+
+    @property
+    def _dte(self) -> int:
+        def _is_friday():
             return datetime.date.today().weekday() == 4
 
-        if is_friday():
+        if _is_friday():
             return self._DTE + 2
         return self._DTE
 
+    def _get_short_leg(self) -> OptionLeg:
+        metadata = {"metadata": ""}
+        if self._option_type == OptionType.CALL:
+            metadata = self._vs.call_map[str(self._short_leg_strike)][0]
+        elif self._option_type == OptionType.PUT:
+            metadata = self._vs.put_map[str(self._short_leg_strike)][0]
+        return OptionLeg(
+            symbol=metadata["symbol"],
+            instruction=Instruction.SELL_TO_OPEN,
+            quantity=1,
+            metadata=metadata,
+        )
+
+    def _get_long_leg(self) -> OptionLeg:
+        metadata = {"metadata": ""}
+        if self._option_type == OptionType.CALL:
+            metadata = self._vs.call_map[str(self._long_leg_strike)][0]
+        if self._option_type == OptionType.PUT:
+            metadata = self._vs.put_map[str(self._long_leg_strike)][0]
+        self._long_leg = OptionLeg(
+            symbol=metadata["symbol"],
+            instruction=Instruction.BUY_TO_OPEN,
+            quantity=1,
+            metadata=metadata,
+        )
+        return self._long_leg
+
     def _get_expiration_date(self) -> datetime:
-        day = datetime.datetime.now(pytz.timezone("US/Eastern")) + datetime.timedelta(
-            hours=24 * self.dte
+        day = datetime.datetime.now(timezone("US/Eastern")) + datetime.timedelta(
+            hours=24 * self._dte
         )
         return day  # "2022-02-28"
 
@@ -161,16 +124,32 @@ class Dte1(Strategy):
         )
         return round(price, 2)
 
+    def _get_consecutive_red_days(self):
+        cnt = 0
+        for i in range(self.CONSECUTIVE_DAYS):
+            if self._vs.stock.candles[i].close >= self._vs.stock.candles[i].open:
+                break
+            cnt += 1
+        return cnt
+
+    def _get_consecutive_green_days(self):
+        cnt = 0
+        for i in range(self.CONSECUTIVE_DAYS):
+            if self._vs.stock.candles[i].open >= self._vs.stock.candles[i].close:
+                break
+            cnt += 1
+        return cnt
+
     def _get_option_type(self):
         def consecutive_red_days() -> bool:
             for i in range(self.CONSECUTIVE_DAYS):
-                if self.vs.stock.candles[i].close >= self.vs.stock.candles[i].open:
+                if self._vs.stock.candles[i].close >= self._vs.stock.candles[i].open:
                     return False
             return True
 
         def consecutive_green_days() -> bool:
             for i in range(self.CONSECUTIVE_DAYS):
-                if self.vs.stock.candles[i].open >= self.vs.stock.candles[i].close:
+                if self._vs.stock.candles[i].open >= self._vs.stock.candles[i].close:
                     return False
             return True
 
@@ -186,19 +165,19 @@ class Dte1(Strategy):
         ) -> float:
             if self._option_type == OptionType.CALL:
                 for j in range(strike_index + 1, len(strikes)):
-                    if abs(float(strikes[j]) - short_strike) >= self.buying_power / 100:
+                    if abs(float(strikes[j]) - short_strike) >= self._buying_power / 100:
                         if (
                             abs(float(strikes[j]) - short_strike)
-                            > self.buying_power / 100
+                            > self._buying_power / 100
                         ):
                             return float(strike_prices[j - 1])
                         return float(strike_prices[j])
             elif self._option_type == OptionType.PUT:
                 for j in range(strike_index - 1, -1, -1):
-                    if abs(float(strikes[j]) - short_strike) >= self.buying_power / 100:
+                    if abs(float(strikes[j]) - short_strike) >= self._buying_power / 100:
                         if (
                             abs(float(strikes[j]) - short_strike)
-                            > self.buying_power / 100
+                            > self._buying_power / 100
                         ):
                             return float(strike_prices[j + 1])
                         return float(strike_prices[j])
@@ -210,14 +189,14 @@ class Dte1(Strategy):
         short_strike_index = -1
         if self._option_type == OptionType.CALL:
             rough_strike = (
-                self.vs.stock.candles[0].close + self.vs.stock.atr * self.ATR_MULTIPLIER
+                    self._vs.stock.candles[0].close + self._vs.stock.atr * self._adjusted_atr_multiplier
             )
-            strike_prices = sorted(self.vs.call_map.keys())
+            strike_prices = sorted(self._vs.call_map.keys())
         elif self._option_type == OptionType.PUT:
             rough_strike = (
-                self.vs.stock.candles[0].close - self.vs.stock.atr * self.ATR_MULTIPLIER
+                    self._vs.stock.candles[0].close - self._vs.stock.atr * self._adjusted_atr_multiplier
             )
-            strike_prices = sorted(self.vs.put_map.keys())
+            strike_prices = sorted(self._vs.put_map.keys())
         elif self._option_type == OptionType.NO_OP:
             return -1, -1
 

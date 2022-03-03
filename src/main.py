@@ -14,4 +14,5 @@ def main(ticker, derp):
 
 
 if __name__ == "__main__":
-    main(TICKER, 1)
+    x = main(TICKER, 1)
+    x.execute()
