@@ -1,4 +1,4 @@
-from dto.strategy import Dte1
+from dto.strategy import DteIC1
 from utils.common_utils import OrderType
 import watchtower
 import logging
@@ -31,7 +31,7 @@ def lambda_handler(event=None, context=None):
     """
 
     try:
-        strategy = Dte1(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500)
+        strategy = DteIC1(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500)
         response = strategy.execute()
         logging.info(str(response))
     except Exception as e:

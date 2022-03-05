@@ -13,10 +13,14 @@ class Strategy(ABC):
     def execute(self) -> dict:
         pass
 
+    @abstractmethod
+    def asset_type(self) -> AssetType:
+        pass
+
 
 class Dte1(Strategy):
-    CONSECUTIVE_DAYS = 1
-    ATR_MULTIPLIER = 1.4
+    CALL_ATR_MULTIPLIER = 1.5
+    PUT_ATR_MULTIPLIER = 1.5
     _DTE = 1
     _QUANTITY = 1
 
@@ -46,25 +50,37 @@ class Dte1(Strategy):
             response = self._broker.place_option_spread_order(
                 order_type=self._vs.order_type,
                 price=self._price,
-                asset_type=self._asset_type,
+                asset_type=self.asset_type,
                 long_leg=self._long_leg,
                 short_leg=self._short_leg,
             )
         return response
 
     @property
-    def _adjusted_atr_multiplier(self):
-        red_cnt = self._get_consecutive_red_days()
-        green_cnt = self._get_consecutive_green_days()
-        if 0 < red_cnt < 3:
-            return self.ATR_MULTIPLIER + 0.4
-        elif 0 < green_cnt < 3:
-            return self.ATR_MULTIPLIER + 0.1
-        return self.ATR_MULTIPLIER
+    def asset_type(self) -> AssetType:
+        return AssetType.OPTION
 
     @property
-    def _asset_type(self) -> AssetType:
-        return AssetType.OPTION
+    def _adjusted_atr_multiplier(self) -> float:
+        cnt = 0
+        multiplier = 0
+        if self._option_type == OptionType.CALL:
+            cnt = self._get_consecutive_green_days()
+            multiplier = self.CALL_ATR_MULTIPLIER
+        elif self._option_type == OptionType.PUT:
+            cnt = self._get_consecutive_red_days()
+            multiplier = self.PUT_ATR_MULTIPLIER
+        if cnt == 0:
+            return multiplier
+        elif cnt == 1:
+            multiplier -= 0.1
+        elif cnt == 2:
+            multiplier -= 0.2
+        elif cnt == 3:
+            multiplier -= 0.3
+        else:
+            multiplier -= 0.4
+        return multiplier
 
     @property
     def _dte(self) -> int:
@@ -126,37 +142,21 @@ class Dte1(Strategy):
 
     def _get_consecutive_red_days(self):
         cnt = 0
-        for i in range(self.CONSECUTIVE_DAYS):
-            if self._vs.stock.candles[i].close >= self._vs.stock.candles[i].open:
-                break
+        while self._vs.stock.candles[cnt].close < self._vs.stock.candles[cnt].open:
             cnt += 1
         return cnt
 
     def _get_consecutive_green_days(self):
         cnt = 0
-        for i in range(self.CONSECUTIVE_DAYS):
-            if self._vs.stock.candles[i].open >= self._vs.stock.candles[i].close:
-                break
+        while self._vs.stock.candles[cnt].open < self._vs.stock.candles[cnt].close:
             cnt += 1
         return cnt
 
     def _get_option_type(self):
-        def consecutive_red_days() -> bool:
-            for i in range(self.CONSECUTIVE_DAYS):
-                if self._vs.stock.candles[i].close >= self._vs.stock.candles[i].open:
-                    return False
-            return True
-
-        def consecutive_green_days() -> bool:
-            for i in range(self.CONSECUTIVE_DAYS):
-                if self._vs.stock.candles[i].open >= self._vs.stock.candles[i].close:
-                    return False
-            return True
-
-        if consecutive_red_days():
-            return OptionType.PUT
-        if consecutive_green_days():
+        if self._get_consecutive_green_days() > 0:
             return OptionType.CALL
+        elif self._get_consecutive_red_days() > 0:
+            return OptionType.PUT
         return OptionType.NO_OP
 
     def _calc_short_and_long_leg_strikes(self) -> (float, float):
@@ -224,3 +224,28 @@ class Dte1(Strategy):
                 short_strike=short_leg_strike,
             ),
         )
+
+
+class DteIC1(Dte1):
+    def __init__(
+        self,
+        ticker: str = "SPX",
+        order_type: OrderType = OrderType.CREDIT,
+        buying_power: int = 500,
+    ):
+        super().__init__(ticker, order_type, buying_power)
+        if self._option_type == OptionType.PUT:
+            self._option_type = OptionType.CALL
+        elif self._option_type == OptionType.CALL:
+            self._option_type = OptionType.PUT
+
+    def execute(self) -> dict:
+        super().execute()
+        (
+            self._short_leg_strike,
+            self._long_leg_strike,
+        ) = self._calc_short_and_long_leg_strikes()
+        self._long_leg = self._get_long_leg()
+        self._short_leg = self._get_short_leg()
+        self._price = self._calculate_price()
+        return super().execute()
