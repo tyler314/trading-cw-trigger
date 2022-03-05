@@ -27,8 +27,6 @@ class Dte1(Strategy):
         buying_power: int = 500,
     ):
         self._broker = Broker()
-        self._long_leg = self._get_long_leg()
-        self._short_leg = self._get_short_leg()
         self._buying_power = buying_power
         self._vs = VerticalSpread(
             ticker, self._QUANTITY, order_type, self._get_expiration_date()
@@ -38,6 +36,8 @@ class Dte1(Strategy):
             self._short_leg_strike,
             self._long_leg_strike,
         ) = self._calc_short_and_long_leg_strikes()
+        self._long_leg = self._get_long_leg()
+        self._short_leg = self._get_short_leg()
         self._price = self._calculate_price()
 
     def execute(self) -> dict:
@@ -112,10 +112,10 @@ class Dte1(Strategy):
         if self._option_type == OptionType.NO_OP:
             return -1
         long_leg_price = (
-            self.long_leg.metadata["bid"] + self.long_leg.metadata["ask"]
+            self._long_leg.metadata["bid"] + self._long_leg.metadata["ask"]
         ) / 2.0
         short_leg_price = (
-            self.short_leg.metadata["bid"] + self.short_leg.metadata["ask"]
+            self._short_leg.metadata["bid"] + self._short_leg.metadata["ask"]
         ) / 2.0
         price = (
             int((short_leg_price - long_leg_price) / ROUNDING_PRECISION)
@@ -165,7 +165,10 @@ class Dte1(Strategy):
         ) -> float:
             if self._option_type == OptionType.CALL:
                 for j in range(strike_index + 1, len(strikes)):
-                    if abs(float(strikes[j]) - short_strike) >= self._buying_power / 100:
+                    if (
+                        abs(float(strikes[j]) - short_strike)
+                        >= self._buying_power / 100
+                    ):
                         if (
                             abs(float(strikes[j]) - short_strike)
                             > self._buying_power / 100
@@ -174,7 +177,10 @@ class Dte1(Strategy):
                         return float(strike_prices[j])
             elif self._option_type == OptionType.PUT:
                 for j in range(strike_index - 1, -1, -1):
-                    if abs(float(strikes[j]) - short_strike) >= self._buying_power / 100:
+                    if (
+                        abs(float(strikes[j]) - short_strike)
+                        >= self._buying_power / 100
+                    ):
                         if (
                             abs(float(strikes[j]) - short_strike)
                             > self._buying_power / 100
@@ -189,12 +195,14 @@ class Dte1(Strategy):
         short_strike_index = -1
         if self._option_type == OptionType.CALL:
             rough_strike = (
-                    self._vs.stock.candles[0].close + self._vs.stock.atr * self._adjusted_atr_multiplier
+                self._vs.stock.candles[0].close
+                + self._vs.stock.atr * self._adjusted_atr_multiplier
             )
             strike_prices = sorted(self._vs.call_map.keys())
         elif self._option_type == OptionType.PUT:
             rough_strike = (
-                    self._vs.stock.candles[0].close - self._vs.stock.atr * self._adjusted_atr_multiplier
+                self._vs.stock.candles[0].close
+                - self._vs.stock.atr * self._adjusted_atr_multiplier
             )
             strike_prices = sorted(self._vs.put_map.keys())
         elif self._option_type == OptionType.NO_OP:
