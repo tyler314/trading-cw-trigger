@@ -100,7 +100,7 @@ class Dte1(Strategy):
         return OptionLeg(
             symbol=metadata["symbol"],
             instruction=Instruction.SELL_TO_OPEN,
-            quantity=1,
+            quantity=self._vs.quantity,
             metadata=metadata,
         )
 
@@ -113,7 +113,7 @@ class Dte1(Strategy):
         self._long_leg = OptionLeg(
             symbol=metadata["symbol"],
             instruction=Instruction.BUY_TO_OPEN,
-            quantity=1,
+            quantity=self._vs.quantity,
             metadata=metadata,
         )
         return self._long_leg
