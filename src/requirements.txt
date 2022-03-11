@@ -2,3 +2,4 @@ tda-api>=1.5.2
 yfinance>=0.1.70
 pytz>=2021.3
 watchtower>=3.0.0
+numpy>=1.22.3

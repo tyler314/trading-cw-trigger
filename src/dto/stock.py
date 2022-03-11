@@ -1,6 +1,7 @@
 import logging
 import watchtower
 import yfinance as yf
+import numpy as np
 
 from dto.candle import Candle
 from utils.common_utils import transform_ticker, TradingPlatforms
@@ -19,7 +20,7 @@ class Stock:
         self.atr: float = self._get_atr()
 
     def _get_candles(self) -> list:
-        candles = []
+        candles = np.empty(self.ATR_TIME_FRAME_DAYS, dtype=Candle)
         data = yf.Ticker(transform_ticker(self.ticker, TradingPlatforms.YAHOO)).history(
             period=str(Stock.ATR_TIME_FRAME_DAYS) + "d"
         )
@@ -28,13 +29,11 @@ class Stock:
             logging.error(msg)
             raise ValueError(msg)
         for i in range(1, self.ATR_TIME_FRAME_DAYS + 1):
-            candles.append(
-                Candle(
-                    open=round(data.Open[-i], 2),
-                    close=round(data.Close[-i], 2),
-                    high=round(data.High[-i], 2),
-                    low=round(data.Low[-i], 2),
-                )
+            candles[i - 1] = Candle(
+                open=round(data.Open[-i], 2),
+                close=round(data.Close[-i], 2),
+                high=round(data.High[-i], 2),
+                low=round(data.Low[-i], 2),
             )
         return candles
 

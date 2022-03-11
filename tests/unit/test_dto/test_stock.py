@@ -4,7 +4,7 @@ from utils.common_utils import transform_ticker, TradingPlatforms
 import yfinance as yf
 
 
-class MyTestCase(unittest.TestCase):
+class TestStock(unittest.TestCase):
     TICKER = "SPX"
 
     def __init__(self, *args, **kwargs):

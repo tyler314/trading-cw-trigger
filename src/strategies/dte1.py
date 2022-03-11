@@ -1,26 +1,17 @@
-from abc import ABC, abstractmethod
 import datetime
+
 from pytz import timezone
+
 from dto.options import VerticalSpread
-from utils.common_utils import OrderType, Instruction, AssetType, OptionLeg, OptionType
+from strategies.strategy import Strategy
 from tda_api.broker import Broker
-
-ROUNDING_PRECISION = 0.05
-
-
-class Strategy(ABC):
-    @abstractmethod
-    def execute(self) -> dict:
-        pass
-
-    @abstractmethod
-    def asset_type(self) -> AssetType:
-        pass
+from utils.common_utils import OrderType, OptionType, AssetType, OptionLeg, Instruction
 
 
 class Dte1(Strategy):
     CALL_ATR_MULTIPLIER = 1.5
     PUT_ATR_MULTIPLIER = 1.5
+    _ROUNDING_PRECISION = 0.05
     _DTE = 1
     _QUANTITY = 1
 
@@ -134,9 +125,9 @@ class Dte1(Strategy):
             self._short_leg.metadata["bid"] + self._short_leg.metadata["ask"]
         ) / 2.0
         price = (
-            int((short_leg_price - long_leg_price) / ROUNDING_PRECISION)
-            * ROUNDING_PRECISION
-            + ROUNDING_PRECISION
+            int((short_leg_price - long_leg_price) / self._ROUNDING_PRECISION)
+            * self._ROUNDING_PRECISION
+            + self._ROUNDING_PRECISION
         )
         return round(price, 2)
 
@@ -224,28 +215,3 @@ class Dte1(Strategy):
                 short_strike=short_leg_strike,
             ),
         )
-
-
-class DteIC1(Dte1):
-    def __init__(
-        self,
-        ticker: str = "SPX",
-        order_type: OrderType = OrderType.CREDIT,
-        buying_power: int = 500,
-    ):
-        super().__init__(ticker, order_type, buying_power)
-        if self._option_type == OptionType.PUT:
-            self._option_type = OptionType.CALL
-        elif self._option_type == OptionType.CALL:
-            self._option_type = OptionType.PUT
-
-    def execute(self) -> dict:
-        super().execute()
-        (
-            self._short_leg_strike,
-            self._long_leg_strike,
-        ) = self._calc_short_and_long_leg_strikes()
-        self._long_leg = self._get_long_leg()
-        self._short_leg = self._get_short_leg()
-        self._price = self._calculate_price()
-        return super().execute()
