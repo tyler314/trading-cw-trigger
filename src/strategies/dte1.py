@@ -9,8 +9,8 @@ from utils.common_utils import OrderType, OptionType, AssetType, OptionLeg, Inst
 
 
 class Dte1(Strategy):
-    CALL_ATR_MULTIPLIER = 1.5
-    PUT_ATR_MULTIPLIER = 1.5
+    CALL_ATR_MULTIPLIER = 1
+    PUT_ATR_MULTIPLIER = 1
     _ROUNDING_PRECISION = 0.05
     _DTE = 1
     _QUANTITY = 1
@@ -53,24 +53,33 @@ class Dte1(Strategy):
 
     @property
     def _adjusted_atr_multiplier(self) -> float:
-        cnt = 0
         multiplier = 0
         if self._option_type == OptionType.CALL:
-            cnt = self._get_consecutive_green_days()
+            green_cnt = self._get_consecutive_green_days()
             multiplier = self.CALL_ATR_MULTIPLIER
+            if green_cnt == 0:
+                multiplier += 0.8
+            elif green_cnt == 1:
+                multiplier += 0.6
+            elif green_cnt == 2:
+                multiplier += 0.2
+            elif green_cnt == 3:
+                multiplier += 0.1
+            elif green_cnt == 4:
+                multiplier += 0.1
         elif self._option_type == OptionType.PUT:
-            cnt = self._get_consecutive_red_days()
+            red_cnt = self._get_consecutive_red_days()
             multiplier = self.PUT_ATR_MULTIPLIER
-        if cnt == 0:
-            return multiplier
-        elif cnt == 1:
-            multiplier -= 0.1
-        elif cnt == 2:
-            multiplier -= 0.2
-        elif cnt == 3:
-            multiplier -= 0.3
-        else:
-            multiplier -= 0.4
+            if red_cnt == 0:
+                multiplier += 1.
+            elif red_cnt == 1:
+                multiplier += 0.8
+            elif red_cnt == 2:
+                multiplier += 0.4
+            elif red_cnt == 3:
+                multiplier += 0.3
+            elif red_cnt == 4:
+                multiplier += 0.0
         return multiplier
 
     @property
