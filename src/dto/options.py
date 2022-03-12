@@ -6,9 +6,8 @@ from utils.common_utils import transform_ticker, TradingPlatforms, OrderType
 import logging
 import watchtower
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.ERROR, handlers=[watchtower.CloudWatchLogHandler()])
 logger = logging.getLogger(__name__)
-logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
 class VerticalSpread:

@@ -3,9 +3,8 @@ from utils.common_utils import OrderType
 import watchtower
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, handlers=[watchtower.CloudWatchLogHandler()])
 logger = logging.getLogger(__name__)
-logger.addHandler(watchtower.CloudWatchLogHandler())
 
 
 def lambda_handler(event=None, context=None):
@@ -31,7 +30,7 @@ def lambda_handler(event=None, context=None):
     """
 
     try:
-        strategy = Dte1IC(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500)
+        strategy = Dte1IC(ticker="SPX", order_type=OrderType.CREDIT, buying_power=500, friday_quantity=2)
         response = strategy.execute()
         logging.info(str(response))
     except Exception as e:

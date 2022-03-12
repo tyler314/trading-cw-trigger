@@ -6,10 +6,8 @@ import numpy as np
 from dto.candle import Candle
 from utils.common_utils import transform_ticker, TradingPlatforms
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.ERROR, handlers=[watchtower.CloudWatchLogHandler()])
 logger = logging.getLogger(__name__)
-logger.addHandler(watchtower.CloudWatchLogHandler())
-
 
 class Stock:
     ATR_TIME_FRAME_DAYS = 14

@@ -13,18 +13,20 @@ class Dte1(Strategy):
     PUT_ATR_MULTIPLIER = 1
     _ROUNDING_PRECISION = 0.05
     _DTE = 1
-    _QUANTITY = 1
 
     def __init__(
         self,
         ticker: str = "SPX",
         order_type: OrderType = OrderType.CREDIT,
         buying_power: int = 500,
+        monday_quantity: int = 1,
+        wednesday_quantity: int = 1,
+        friday_quantity: int = 1,
     ):
         self._broker = Broker()
         self._buying_power = buying_power
         self._vs = VerticalSpread(
-            ticker, self._QUANTITY, order_type, self._get_expiration_date()
+            ticker, self._get_quantity(), order_type, self._get_expiration_date()
         )
         self._option_type = self._get_option_type()
         (
@@ -34,6 +36,9 @@ class Dte1(Strategy):
         self._long_leg = self._get_long_leg()
         self._short_leg = self._get_short_leg()
         self._price = self._calculate_price()
+        self._monday_quantity = monday_quantity
+        self._wednesday_quantity = wednesday_quantity
+        self._friday_quantity = friday_quantity
 
     def execute(self) -> dict:
         response = {"code": "bad", "order_body": "Null"}
@@ -50,6 +55,15 @@ class Dte1(Strategy):
     @property
     def asset_type(self) -> AssetType:
         return AssetType.OPTION
+
+    def _get_quantity(self) -> int:
+        if self._is_friday():
+            return self._monday_quantity
+        elif self._is_tuesday():
+            return self._wednesday_quantity
+        elif self._is_thursday():
+            return self._friday_quantity
+        return 1
 
     @property
     def _adjusted_atr_multiplier(self) -> float:
@@ -84,10 +98,7 @@ class Dte1(Strategy):
 
     @property
     def _dte(self) -> int:
-        def _is_friday():
-            return datetime.date.today().weekday() == 4
-
-        if _is_friday():
+        if self._is_friday():
             return self._DTE + 2
         return self._DTE
 
