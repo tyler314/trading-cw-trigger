@@ -9,6 +9,7 @@ from utils.common_utils import transform_ticker, TradingPlatforms
 logging.basicConfig(level=logging.ERROR, handlers=[watchtower.CloudWatchLogHandler()])
 logger = logging.getLogger(__name__)
 
+
 class Stock:
     ATR_TIME_FRAME_DAYS = 14
 

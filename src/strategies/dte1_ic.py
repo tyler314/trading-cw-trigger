@@ -12,7 +12,14 @@ class Dte1IC(Dte1):
         wednesday_quantity: int = 1,
         friday_quantity: int = 1,
     ):
-        super().__init__(ticker, order_type, buying_power, monday_quantity, wednesday_quantity, friday_quantity)
+        super().__init__(
+            ticker,
+            order_type,
+            buying_power,
+            monday_quantity,
+            wednesday_quantity,
+            friday_quantity,
+        )
         if self._option_type == OptionType.PUT:
             self._option_type = OptionType.CALL
         elif self._option_type == OptionType.CALL:

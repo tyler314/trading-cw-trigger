@@ -3,7 +3,8 @@ import tempfile
 import shutil
 from tda import auth
 from lib import config
-from utils.common_utils import OrderType, AssetType, OptionLeg
+from utils.common_utils import OrderType, AssetType
+from utils.common_utils import OptionLeg
 
 
 class Broker:

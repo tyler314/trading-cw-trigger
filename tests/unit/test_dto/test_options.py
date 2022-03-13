@@ -1,5 +1,5 @@
 import unittest
-from dto.options import VerticalSpread
+from factories.option_factory import OptionFactory
 
 
 class TestVerticalSpread(unittest.TestCase):
@@ -7,7 +7,7 @@ class TestVerticalSpread(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.vs = VerticalSpread()
+        self.vs = OptionFactory()
         pass
 
 
