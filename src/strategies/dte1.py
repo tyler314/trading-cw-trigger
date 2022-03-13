@@ -23,18 +23,18 @@ class Dte1(Strategy):
         wednesday_quantity: int = 1,
         friday_quantity: int = 1,
     ):
+        self._monday_quantity = monday_quantity
+        self._wednesday_quantity = wednesday_quantity
+        self._friday_quantity = friday_quantity
         self._broker = Broker()
         self._buying_power = buying_power
         self.option_factory = OptionFactory(
-            ticker, self._get_quantity(), order_type, self._get_expiration_date()
+            ticker, self._quantity, order_type, self._get_expiration_date()
         )
         self._option_type = self._get_option_type()
         self._vs = self.option_factory.get_vertical_spread(
             self._get_rough_strike_price(), buying_power, self._option_type
         )
-        self._monday_quantity = monday_quantity
-        self._wednesday_quantity = wednesday_quantity
-        self._friday_quantity = friday_quantity
 
     def execute(self) -> dict:
         response = {"code": "bad", "order_body": "Null"}
@@ -52,7 +52,8 @@ class Dte1(Strategy):
     def asset_type(self) -> AssetType:
         return AssetType.OPTION
 
-    def _get_quantity(self) -> int:
+    @property
+    def _quantity(self) -> int:
         if self._is_friday():
             return self._monday_quantity
         elif self._is_tuesday():
@@ -133,8 +134,8 @@ class Dte1(Strategy):
         rough_strike = -1
         if self._option_type == OptionType.CALL:
             rough_strike = (
-                self._vs.stock.candles[0].close
-                + self._vs.stock.atr * self._adjusted_atr_multiplier
+                self.option_factory.stock.candles[0].close
+                + self.option_factory.stock.atr * self._adjusted_atr_multiplier
             )
         elif self._option_type == OptionType.PUT:
             rough_strike = (

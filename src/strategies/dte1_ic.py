@@ -27,11 +27,7 @@ class Dte1IC(Dte1):
 
     def execute(self) -> dict:
         super().execute()
-        (
-            self._short_leg_strike,
-            self._long_leg_strike,
-        ) = self._calc_short_and_long_leg_strikes()
-        self._long_leg = self._get_long_leg()
-        self._short_leg = self._get_short_leg()
-        self._price = self._calculate_price()
+        self._vs = self.option_factory.get_vertical_spread(
+            self._get_rough_strike_price(), self._buying_power, self._option_type
+        )
         return super().execute()

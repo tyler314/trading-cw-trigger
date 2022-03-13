@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum
 
 std_to_tda = {"SPX": "$SPX.X", "NDX": "$NDX.X"}
@@ -31,14 +30,6 @@ class OptionType(Enum):
     CALL = "CALL"
     PUT = "PUT"
     NO_OP = "NO_OP"
-
-
-@dataclass
-class OptionLeg:
-    symbol: str
-    instruction: Instruction
-    quantity: int
-    metadata: dict
 
 
 def transform_ticker(ticker, tp: TradingPlatforms):

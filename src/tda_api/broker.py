@@ -4,7 +4,7 @@ import shutil
 from tda import auth
 from lib import config
 from utils.common_utils import OrderType, AssetType
-from utils.common_utils import OptionLeg
+from dto.options import OptionLeg
 
 
 class Broker:

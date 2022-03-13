@@ -1,6 +1,6 @@
 import datetime
-from dataclasses import dataclass
 
+from dto.options import VerticalSpread, OptionLeg
 from dto.stock import Stock
 from tda_api.broker import Broker
 from utils.common_utils import (
@@ -9,7 +9,6 @@ from utils.common_utils import (
     OrderType,
     Instruction,
     OptionType,
-    OptionLeg,
 )
 import logging
 import watchtower
@@ -39,10 +38,10 @@ class OptionFactory:
         ) = self._get_put_and_call_maps()  # maps strike-price -> metadata
 
     def get_vertical_spread(
-        self, rough_strike: float, width: int, option_type: OptionType
+        self, short_leg_strike: float, width: int, option_type: OptionType
     ):
         (short_leg, long_leg,) = self._get_legs_for_vertical_spread(
-            rough_strike, width, option_type
+            short_leg_strike, width, option_type
         )
         price = self._calculate_price_for_vertical_spread(
             option_type, short_leg, long_leg
@@ -88,7 +87,7 @@ class OptionFactory:
 
     def _get_legs_for_vertical_spread(
         self, rough_strike: float, width: int, option_type: OptionType
-    ) -> (float, float):
+    ) -> (OptionLeg, OptionLeg):
         def get_long_leg_strike(
             strikes: list, strike_index: int, short_strike: float
         ) -> float:
@@ -170,13 +169,3 @@ class OptionFactory:
             + self._ROUNDING_PRECISION
         )
         return round(price, 2)
-
-
-@dataclass()
-class VerticalSpread:
-    order_type: OrderType
-    quantity: int
-    expiration_date: str
-    short_leg: OptionLeg
-    long_leg: OptionLeg
-    price: float
