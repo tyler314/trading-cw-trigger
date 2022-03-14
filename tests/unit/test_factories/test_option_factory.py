@@ -58,5 +58,41 @@ class TestOptionFactory(unittest.TestCase):
         self.assertEqual(long_leg.metadata["symbol"][-4:], str(4100 + width // 100))
 
     def test_calculate_price_for_vertical_spread(self):
-        short_leg_metadata = self.option_factory.call_map["4200.0"]
-        long_leg_metadata = self.option_factory.call_map["4250.0"]
+        # Calls
+        (short_leg, long_leg,) = self.option_factory._get_legs_for_vertical_spread(
+            4200, 5000, OptionType.CALL
+        )
+        self.assertEqual(
+            29.4,
+            self.option_factory._calculate_price_for_vertical_spread(
+                OptionType.CALL, short_leg, long_leg
+            ),
+        )
+        (short_leg, long_leg,) = self.option_factory._get_legs_for_vertical_spread(
+            4000, 10000, OptionType.CALL
+        )
+        self.assertEqual(
+            99.45,
+            self.option_factory._calculate_price_for_vertical_spread(
+                OptionType.CALL, short_leg, long_leg
+            ),
+        )
+        # Puts
+        (short_leg, long_leg,) = self.option_factory._get_legs_for_vertical_spread(
+            4200, 5000, OptionType.PUT
+        )
+        self.assertEqual(
+            6.5,
+            self.option_factory._calculate_price_for_vertical_spread(
+                OptionType.CALL, short_leg, long_leg
+            ),
+        )
+        (short_leg, long_leg,) = self.option_factory._get_legs_for_vertical_spread(
+            4100, 10000, OptionType.PUT
+        )
+        self.assertEqual(
+            0.2,
+            self.option_factory._calculate_price_for_vertical_spread(
+                OptionType.CALL, short_leg, long_leg
+            ),
+        )

@@ -13,8 +13,8 @@ class Dte1(Strategy):
     DTE = 1
     # -1 represents default value
     DAYS_IN_ROW_TO_DELTA = {
-        OptionType.CALL: {-1: 1.0, 0: 1.8, 1: 1.6, 2: 1.2, 3: 1.1, 4: 1.1, },
-        OptionType.PUT: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.4, 3: 1.3, 4: 1.0, },
+        OptionType.CALL: {-1: 1.0, 0: 1.8, 1: 1.6, 2: 1.2, 3: 1.1, 4: 1.1,},
+        OptionType.PUT: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.4, 3: 1.3, 4: 1.0,},
     }
 
     def __init__(
