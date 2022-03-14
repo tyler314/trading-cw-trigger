@@ -4,7 +4,7 @@ import datetime
 import json
 from unittest.mock import MagicMock, patch
 from utils.common_utils import OrderType, OptionType
-from factories.option_factory import OptionFactory
+from dto.factories.option_factory import OptionFactory
 
 
 TICKER = "SPX"
@@ -30,7 +30,7 @@ def _get_call_map():
 
 class TestOptionFactory(unittest.TestCase):
     @patch.multiple(
-        "factories.option_factory.OptionFactory",
+        "dto.factories.option_factory.OptionFactory",
         _get_put_and_call_maps=MagicMock(
             return_value=(_get_put_map(), _get_call_map())
         ),

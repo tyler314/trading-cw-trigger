@@ -2,17 +2,20 @@ import datetime
 
 from pytz import timezone
 
-from factories.option_factory import OptionFactory
+from dto.factories.option_factory import OptionFactory
 from strategies.strategy import Strategy
 from tda_api.broker import Broker
 from utils.common_utils import OrderType, OptionType, AssetType
 
 
 class Dte1(Strategy):
-    CALL_ATR_MULTIPLIER = 1
-    PUT_ATR_MULTIPLIER = 1
-    _ROUNDING_PRECISION = 0.05
-    _DTE = 1
+    ROUNDING_PRECISION = 0.05
+    DTE = 1
+    # -1 represents default value
+    DAYS_IN_ROW_TO_DELTA = {
+        OptionType.CALL: {-1: 1.0, 0: 1.8, 1: 1.6, 2: 1.2, 3: 1.1, 4: 1.1, },
+        OptionType.PUT: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.4, 3: 1.3, 4: 1.0, },
+    }
 
     def __init__(
         self,
@@ -29,11 +32,11 @@ class Dte1(Strategy):
         self._broker = Broker()
         self._buying_power = buying_power
         self.option_factory = OptionFactory(
-            ticker, self._quantity, order_type, self._get_expiration_date()
+            ticker, self._quantity, order_type, self._expiration_date
         )
         self._option_type = self._get_option_type()
         self._vs = self.option_factory.get_vertical_spread(
-            self._get_rough_strike_price(), buying_power, self._option_type
+            self._short_leg_strike_price, buying_power, self._option_type
         )
 
     def execute(self) -> dict:
@@ -63,49 +66,34 @@ class Dte1(Strategy):
         return 1
 
     @property
-    def _adjusted_atr_multiplier(self) -> float:
-        multiplier = 0
+    def _atr_multiplier(self) -> float:
         if self._option_type == OptionType.CALL:
-            green_cnt = self._get_consecutive_green_days()
-            multiplier = self.CALL_ATR_MULTIPLIER
-            if green_cnt == 0:
-                multiplier += 0.8
-            elif green_cnt == 1:
-                multiplier += 0.6
-            elif green_cnt == 2:
-                multiplier += 0.2
-            elif green_cnt == 3:
-                multiplier += 0.1
-            elif green_cnt == 4:
-                multiplier += 0.1
+            green_cnt = self._consecutive_green_days
+            if green_cnt not in self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL].keys():
+                return self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL][-1]
+            return self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL][green_cnt]
         elif self._option_type == OptionType.PUT:
-            red_cnt = self._get_consecutive_red_days()
-            multiplier = self.PUT_ATR_MULTIPLIER
-            if red_cnt == 0:
-                multiplier += 1.0
-            elif red_cnt == 1:
-                multiplier += 0.8
-            elif red_cnt == 2:
-                multiplier += 0.4
-            elif red_cnt == 3:
-                multiplier += 0.3
-            elif red_cnt == 4:
-                multiplier += 0.0
-        return multiplier
+            red_cnt = self._consecutive_red_days
+            if red_cnt not in self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT].keys():
+                return self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT][-1]
+            return self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT][red_cnt]
+        return -1
 
     @property
     def _dte(self) -> int:
         if self._is_friday():
-            return self._DTE + 2
-        return self._DTE
+            return self.DTE + 2
+        return self.DTE
 
-    def _get_expiration_date(self) -> datetime:
+    @property
+    def _expiration_date(self) -> datetime:
         day = datetime.datetime.now(timezone("US/Eastern")) + datetime.timedelta(
             hours=24 * self._dte
         )
         return day  # "2022-02-28"
 
-    def _get_consecutive_red_days(self):
+    @property
+    def _consecutive_red_days(self):
         cnt = 0
         while (
             self.option_factory.stock.candles[cnt].close
@@ -114,7 +102,8 @@ class Dte1(Strategy):
             cnt += 1
         return cnt
 
-    def _get_consecutive_green_days(self):
+    @property
+    def _consecutive_green_days(self):
         cnt = 0
         while (
             self.option_factory.stock.candles[cnt].open
@@ -123,23 +112,19 @@ class Dte1(Strategy):
             cnt += 1
         return cnt
 
+    @property
+    def _short_leg_strike_price(self):
+        close_price = self.option_factory.stock.candles[0].close
+        delta = self.option_factory.stock.atr * self._atr_multiplier
+        if self._option_type == OptionType.CALL:
+            close_price += delta
+        elif self._option_type == OptionType.PUT:
+            close_price -= delta
+        return close_price
+
     def _get_option_type(self):
-        if self._get_consecutive_green_days() > 0:
+        if self._consecutive_green_days > 0:
             return OptionType.CALL
-        elif self._get_consecutive_red_days() > 0:
+        elif self._consecutive_red_days > 0:
             return OptionType.PUT
         return OptionType.NO_OP
-
-    def _get_rough_strike_price(self):
-        rough_strike = -1
-        if self._option_type == OptionType.CALL:
-            rough_strike = (
-                self.option_factory.stock.candles[0].close
-                + self.option_factory.stock.atr * self._adjusted_atr_multiplier
-            )
-        elif self._option_type == OptionType.PUT:
-            rough_strike = (
-                self.option_factory.stock.candles[0].close
-                - self.option_factory.stock.atr * self._adjusted_atr_multiplier
-            )
-        return rough_strike

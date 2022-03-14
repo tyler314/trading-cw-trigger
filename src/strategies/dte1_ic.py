@@ -20,14 +20,13 @@ class Dte1IC(Dte1):
             wednesday_quantity,
             friday_quantity,
         )
-        if self._option_type == OptionType.PUT:
-            self._option_type = OptionType.CALL
-        elif self._option_type == OptionType.CALL:
-            self._option_type = OptionType.PUT
 
     def execute(self) -> dict:
-        super().execute()
-        self._vs = self.option_factory.get_vertical_spread(
-            self._get_rough_strike_price(), self._buying_power, self._option_type
+        response = super().execute()
+        self._option_type = (
+            OptionType.CALL if self._option_type == OptionType.PUT else OptionType.PUT
         )
-        return super().execute()
+        self._vs = self.option_factory.get_vertical_spread(
+            self._short_leg_strike_price, self._buying_power, self._option_type,
+        )
+        return {"order 1": super().execute(), "order 2": response}

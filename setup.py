@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="trading_cw_trigger",
     version="1.0.0",
-    packages=["dto", "utils", "tda_api", "strategies"],
+    packages=["dto", "utils", "tda_api", "strategies", "dto.factories"],
     python_requires=">=3.7",
     install_requires=[
         "tda-api>=1.5.2",
