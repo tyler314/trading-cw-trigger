@@ -38,10 +38,10 @@ class OptionFactory:
         ) = self._get_put_and_call_maps()  # maps strike-price -> metadata
 
     def get_vertical_spread(
-        self, short_leg_strike: float, width: int, option_type: OptionType
+        self, short_leg_strike: float, buying_power: int, option_type: OptionType
     ):
         (short_leg, long_leg,) = self._get_legs_for_vertical_spread(
-            short_leg_strike, width, option_type
+            short_leg_strike, buying_power, option_type
         )
         price = self._calculate_price_for_vertical_spread(
             option_type, short_leg, long_leg

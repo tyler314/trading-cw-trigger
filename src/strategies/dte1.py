@@ -40,16 +40,15 @@ class Dte1(Strategy):
         )
 
     def execute(self) -> dict:
-        response = {"code": "bad", "order_body": "Null"}
         if self._option_type != OptionType.NO_OP:
-            response = self._broker.place_option_spread_order(
+            return self._broker.place_option_spread_order(
                 order_type=self._vs.order_type,
                 price=self._vs.price,
                 asset_type=self.asset_type,
                 long_leg=self._vs.long_leg,
                 short_leg=self._vs.short_leg,
             )
-        return response
+        return {"code": "bad", "order_body": "Null"}
 
     @property
     def asset_type(self) -> AssetType:
