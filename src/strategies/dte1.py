@@ -66,16 +66,14 @@ class Dte1(Strategy):
 
     @property
     def _atr_multiplier(self) -> float:
+        def get_multiplier(option_map: dict, cnt: int):
+            if cnt not in option_map.keys():
+                return option_map[-1]
+            return option_map[cnt]
         if self._option_type == OptionType.CALL:
-            green_cnt = self._consecutive_green_days
-            if green_cnt not in self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL].keys():
-                return self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL][-1]
-            return self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL][green_cnt]
+            return get_multiplier(self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL], self._consecutive_green_days)
         elif self._option_type == OptionType.PUT:
-            red_cnt = self._consecutive_red_days
-            if red_cnt not in self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT].keys():
-                return self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT][-1]
-            return self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT][red_cnt]
+            return get_multiplier(self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT], self._consecutive_red_days)
         return -1
 
     @property
@@ -89,7 +87,7 @@ class Dte1(Strategy):
         day = datetime.datetime.now(timezone("US/Eastern")) + datetime.timedelta(
             hours=24 * self._dte
         )
-        return day  # "2022-02-28"
+        return day  # e.g. "2022-02-28"
 
     @property
     def _consecutive_red_days(self):

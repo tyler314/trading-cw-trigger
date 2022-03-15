@@ -29,6 +29,19 @@ def _get_call_map():
         return json.load(call_map_file)
 
 
+def get_leg(strike: str, option_type: OptionType, instruction: Instruction):
+    if option_type == OptionType.CALL:
+        option_map = _get_call_map()
+    else:
+        option_map = _get_put_map()
+    return OptionLeg(
+        instruction=instruction,
+        quantity=1,
+        symbol=option_map[strike][0]["symbol"],
+        metadata=option_map[strike][0],
+    )
+
+
 class TestOptionFactory(unittest.TestCase):
     @patch.multiple(
         "dto.factories.option_factory.OptionFactory",
@@ -120,16 +133,3 @@ class TestOptionFactory(unittest.TestCase):
             price=1.15,
         )
         self.assertEqual(actual_vertical_spread, expected_vertical_spread)
-
-
-def get_leg(strike: str, option_type: OptionType, instruction: Instruction):
-    if option_type == OptionType.CALL:
-        option_map = _get_call_map()
-    else:
-        option_map = _get_put_map()
-    return OptionLeg(
-        instruction=instruction,
-        quantity=1,
-        symbol=option_map[strike][0]["symbol"],
-        metadata=option_map[strike][0],
-    )
