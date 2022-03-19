@@ -70,10 +70,15 @@ class Dte1(Strategy):
             if cnt not in option_map.keys():
                 return option_map[-1]
             return option_map[cnt]
+
         if self._option_type == OptionType.CALL:
-            return get_multiplier(self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL], self._consecutive_green_days)
+            return get_multiplier(
+                self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL], self._consecutive_green_days
+            )
         elif self._option_type == OptionType.PUT:
-            return get_multiplier(self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT], self._consecutive_red_days)
+            return get_multiplier(
+                self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT], self._consecutive_red_days
+            )
         return -1
 
     @property

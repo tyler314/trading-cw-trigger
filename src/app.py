@@ -30,12 +30,7 @@ def lambda_handler(event=None, context=None):
     """
 
     try:
-        strategy = Dte1IC(
-            ticker="SPX",
-            order_type=OrderType.CREDIT,
-            buying_power=500,
-            friday_quantity=2,
-        )
+        strategy = Dte1IC(ticker="SPX", order_type=OrderType.CREDIT, buying_power=1000)
         response = strategy.execute()
         logging.info(str(response))
     except Exception as e:

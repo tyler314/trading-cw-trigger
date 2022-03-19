@@ -88,22 +88,36 @@ class OptionFactory:
     def _get_legs_for_vertical_spread(
         self, rough_strike: float, width: int, option_type: OptionType
     ) -> (OptionLeg, OptionLeg):
+        def get_leg(strike: float, instruction: Instruction) -> OptionLeg:
+            metadata = {"metadata": ""}
+            if option_type == OptionType.CALL:
+                metadata = self.call_map[str(strike)][0]
+            elif option_type == OptionType.PUT:
+                metadata = self.put_map[str(strike)][0]
+            return OptionLeg(
+                symbol=metadata["symbol"],
+                instruction=instruction,
+                quantity=self.quantity,
+                metadata=metadata,
+            )
+
         def get_long_leg_strike(
             strikes: list, strike_index: int, short_strike: float
         ) -> float:
             if option_type == OptionType.CALL:
-                for j in range(strike_index + 1, len(strikes)):
-                    if abs(float(strikes[j]) - short_strike) >= width / 100:
-                        if abs(float(strikes[j]) - short_strike) > width / 100:
-                            return float(strike_prices[j - 1])
-                        return float(strike_prices[j])
+                strikes = strikes[strike_index:]
             elif option_type == OptionType.PUT:
-                for j in range(strike_index - 1, -1, -1):
-                    if abs(float(strikes[j]) - short_strike) >= width / 100:
-                        if abs(float(strikes[j]) - short_strike) > width / 100:
-                            return float(strike_prices[j + 1])
-                        return float(strike_prices[j])
-            return -1
+                strikes = strikes[: strike_index + 1]
+                strikes.reverse()
+            else:
+                return -1
+            prev_strike = strikes[0]
+            for strike in strikes:
+                if abs(float(strike) - short_strike) >= width / 100:
+                    if abs(float(strike) - short_strike) > width / 100:
+                        return float(prev_strike)
+                    return float(strike)
+                prev_strike = strike
 
         short_leg_strike = -1
         strike_prices = list()
@@ -116,45 +130,27 @@ class OptionFactory:
             return -1, -1
 
         min_diff = float("Inf")
-        for i, strike in enumerate(strike_prices):
-            diff = abs(float(strike) - rough_strike)
+        for i, strike_price in enumerate(strike_prices):
+            diff = abs(float(strike_price) - rough_strike)
             if diff < min_diff:
                 short_strike_index = i
                 min_diff = diff
-                short_leg_strike = float(strike)
+                short_leg_strike = float(strike_price)
         long_leg_strike = get_long_leg_strike(
             strikes=strike_prices,
             strike_index=short_strike_index,
             short_strike=short_leg_strike,
         )
-
-        def get_short_leg() -> OptionLeg:
-            metadata = {"metadata": ""}
-            if option_type == OptionType.CALL:
-                metadata = self.call_map[str(short_leg_strike)][0]
-            elif option_type == OptionType.PUT:
-                metadata = self.put_map[str(short_leg_strike)][0]
-            return OptionLeg(
-                symbol=metadata["symbol"],
-                instruction=Instruction.SELL_TO_OPEN,
-                quantity=self.quantity,
-                metadata=metadata,
+        if short_leg_strike == long_leg_strike:
+            msg = "Vertical spread {} strike prices are the same for both long & short legs: {}".format(
+                option_type.name, short_leg_strike
             )
-
-        def get_long_leg() -> OptionLeg:
-            metadata = {"metadata": ""}
-            if option_type == OptionType.CALL:
-                metadata = self.call_map[str(long_leg_strike)][0]
-            if option_type == OptionType.PUT:
-                metadata = self.put_map[str(long_leg_strike)][0]
-            return OptionLeg(
-                symbol=metadata["symbol"],
-                instruction=Instruction.BUY_TO_OPEN,
-                quantity=self.quantity,
-                metadata=metadata,
-            )
-
-        return get_short_leg(), get_long_leg()
+            logging.error(msg)
+            print(msg)
+        return (
+            get_leg(short_leg_strike, Instruction.SELL_TO_OPEN),
+            get_leg(long_leg_strike, Instruction.BUY_TO_OPEN),
+        )
 
     def _calculate_price_for_vertical_spread(
         self, option_type: OptionType, short_leg: OptionLeg, long_leg: OptionLeg
