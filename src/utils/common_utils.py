@@ -32,7 +32,7 @@ class OptionType(Enum):
     NO_OP = "NO_OP"
 
 
-def transform_ticker(ticker, tp: TradingPlatforms):
+def transform_ticker(ticker: str, tp: TradingPlatforms) -> str:
     if tp == TradingPlatforms.YAHOO:
         return ticker if ticker not in std_to_yf.keys() else std_to_yf[ticker]
     elif tp == TradingPlatforms.TDA:

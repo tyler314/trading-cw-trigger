@@ -66,7 +66,7 @@ class Dte1(Strategy):
 
     @property
     def _atr_multiplier(self) -> float:
-        def get_multiplier(option_map: dict, cnt: int):
+        def get_multiplier(option_map: dict, cnt: int) -> float:
             if cnt not in option_map.keys():
                 return option_map[-1]
             return option_map[cnt]
@@ -92,10 +92,10 @@ class Dte1(Strategy):
         day = datetime.datetime.now(timezone("US/Eastern")) + datetime.timedelta(
             hours=24 * self._dte
         )
-        return day  # e.g. "2022-02-28"
+        return day
 
     @property
-    def _consecutive_red_days(self):
+    def _consecutive_red_days(self) -> int:
         cnt = 0
         while (
             self.option_factory.stock.candles[cnt].close
@@ -105,7 +105,7 @@ class Dte1(Strategy):
         return cnt
 
     @property
-    def _consecutive_green_days(self):
+    def _consecutive_green_days(self) -> int:
         cnt = 0
         while (
             self.option_factory.stock.candles[cnt].open
@@ -115,7 +115,7 @@ class Dte1(Strategy):
         return cnt
 
     @property
-    def _short_leg_strike_price(self):
+    def _short_leg_strike_price(self) -> float:
         close_price = self.option_factory.stock.candles[0].close
         delta = self.option_factory.stock.atr * self._atr_multiplier
         if self._option_type == OptionType.CALL:
@@ -124,7 +124,7 @@ class Dte1(Strategy):
             close_price -= delta
         return close_price
 
-    def _get_option_type(self):
+    def _get_option_type(self) -> OptionType:
         if self._consecutive_green_days > 0:
             return OptionType.CALL
         elif self._consecutive_red_days > 0:

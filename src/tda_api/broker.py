@@ -21,11 +21,11 @@ class Broker:
     def __del__(self):
         shutil.rmtree(self._tmp_dir)
 
-    def quote(self, ticker):
+    def quote(self, ticker: str) -> dict:
         response = self.client.get_quote(ticker)
         return response.json()
 
-    def option_chain(self, ticker):
+    def option_chain(self, ticker: str) -> dict:
         response = self.client.get_option_chain(ticker)
         return response.json()
 
@@ -36,7 +36,7 @@ class Broker:
         asset_type: AssetType,
         long_leg: OptionLeg,
         short_leg: OptionLeg,
-    ):
+    ) -> dict:
         order_body = {
             "orderType": order_type.value,
             "session": "NORMAL",

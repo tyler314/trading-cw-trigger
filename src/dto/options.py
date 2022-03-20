@@ -11,7 +11,7 @@ class OptionLeg:
     metadata: dict
 
 
-@dataclass()
+@dataclass
 class VerticalSpread:
     order_type: OrderType
     quantity: int

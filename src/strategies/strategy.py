@@ -13,21 +13,21 @@ class Strategy(ABC):
         pass
 
     @staticmethod
-    def _is_monday():
+    def _is_monday() -> bool:
         return datetime.date.today().weekday() == 0
 
     @staticmethod
-    def _is_tuesday():
+    def _is_tuesday() -> bool:
         return datetime.date.today().weekday() == 1
 
     @staticmethod
-    def _is_wednesday():
+    def _is_wednesday() -> bool:
         return datetime.date.today().weekday() == 2
 
     @staticmethod
-    def _is_thursday():
+    def _is_thursday() -> bool:
         return datetime.date.today().weekday() == 3
 
     @staticmethod
-    def _is_friday():
+    def _is_friday() -> bool:
         return datetime.date.today().weekday() == 4
