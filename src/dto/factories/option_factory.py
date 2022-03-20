@@ -32,10 +32,7 @@ class OptionFactory:
         self.stock = Stock(ticker)
         self.quantity = quantity
         self.expiration_date = expiration_date.strftime("%Y-%m-%d")
-        (
-            self.put_map,
-            self.call_map,
-        ) = self._get_put_and_call_maps()
+        (self.put_map, self.call_map,) = self._get_put_and_call_maps()
 
     def get_vertical_spread(
         self, short_leg_strike: float, buying_power: int, option_type: OptionType
@@ -119,23 +116,34 @@ class OptionFactory:
                     return float(strike)
                 prev_strike = strike
 
-        short_leg_strike = -1
-        strike_prices = list()
-        short_strike_index = -1
-        if option_type == OptionType.CALL:
-            strike_prices = sorted(self.call_map.keys())
-        elif option_type == OptionType.PUT:
-            strike_prices = sorted(self.put_map.keys())
-        elif option_type == OptionType.NO_OP:
-            return -1, -1
+        def get_strike_prices() -> list:
+            if option_type == OptionType.CALL:
+                return sorted(self.call_map.keys())
+            elif option_type == OptionType.PUT:
+                return sorted(self.put_map.keys())
+            logging.info(
+                "OptionType was invalid when calling OptionFactory.get_get_vertical_spread: {}".format(
+                    option_type
+                )
+            )
+            return []
 
-        min_diff = float("Inf")
-        for i, strike_price in enumerate(strike_prices):
-            diff = abs(float(strike_price) - rough_strike)
-            if diff < min_diff:
-                short_strike_index = i
-                min_diff = diff
-                short_leg_strike = float(strike_price)
+        def get_short_leg_strike_and_index(strikes: list) -> (float, int):
+            strike = -1
+            index = -1
+            min_diff = float("Inf")
+            for i, strike_price in enumerate(strikes):
+                diff = abs(float(strike_price) - rough_strike)
+                if diff < min_diff:
+                    index = i
+                    min_diff = diff
+                    strike = float(strike_price)
+            return strike, index
+
+        strike_prices = get_strike_prices()
+        short_leg_strike, short_strike_index = get_short_leg_strike_and_index(
+            strike_prices
+        )
         long_leg_strike = get_long_leg_strike(
             strikes=strike_prices,
             strike_index=short_strike_index,
