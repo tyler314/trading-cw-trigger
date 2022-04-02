@@ -9,12 +9,15 @@ from utils.common_utils import OrderType, OptionType, AssetType
 
 
 class Dte1(Strategy):
-    ROUNDING_PRECISION = 0.05
     DTE = 1
     # -1 represents default value
-    DAYS_IN_ROW_TO_DELTA = {
-        OptionType.CALL: {-1: 1.0, 0: 1.8, 1: 1.6, 2: 1.2, 3: 1.1, 4: 1.1,},
-        OptionType.PUT: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.4, 3: 1.3, 4: 1.0,},
+    DAYS_IN_ROW_TO_DELTA_WHEN_VIX_GREATER_THAN_20 = {
+        OptionType.CALL: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.4, 3: 1.3, 4: 1.3,},
+        OptionType.PUT: {-1: 1.0, 0: 2.0, 1: 1.8, 2: 1.5, 3: 1.2, 4: 0.8,},
+    }
+    DAYS_IN_ROW_TO_DELTA_WHEN_VIX_LESS_THAN_20 = {
+        OptionType.CALL: {-1: 1.0, 0: 1.8, 1: 1.5, 2: 1.2, 3: 1.2, 4: 1.0,},
+        OptionType.PUT: {-1: 1.0, 0: 1.8, 1: 1.4, 2: 1.0, 3: 0.6, 4: 0.6,},
     }
 
     def __init__(
@@ -40,6 +43,8 @@ class Dte1(Strategy):
         )
 
     def execute(self) -> dict:
+        if self._vs.price < 0.10:
+            self._option_type = OptionType.NO_OP
         if self._option_type != OptionType.NO_OP:
             return self._broker.place_option_spread_order(
                 order_type=self._vs.order_type,
@@ -71,13 +76,23 @@ class Dte1(Strategy):
                 return option_map[-1]
             return option_map[cnt]
 
+        def get_call_map() -> dict:
+            if self._vix > 20:
+                return self.DAYS_IN_ROW_TO_DELTA_WHEN_VIX_GREATER_THAN_20[OptionType.CALL]
+            return self.DAYS_IN_ROW_TO_DELTA_WHEN_VIX_LESS_THAN_20[OptionType.CALL]
+
+        def get_put_map() -> dict:
+            if self._vix > 20:
+                return self.DAYS_IN_ROW_TO_DELTA_WHEN_VIX_GREATER_THAN_20[OptionType.PUT]
+            return self.DAYS_IN_ROW_TO_DELTA_WHEN_VIX_LESS_THAN_20[OptionType.PUT]
+
         if self._option_type == OptionType.CALL:
             return get_multiplier(
-                self.DAYS_IN_ROW_TO_DELTA[OptionType.CALL], self._consecutive_green_days
+                get_call_map(), self._consecutive_green_days
             )
         elif self._option_type == OptionType.PUT:
             return get_multiplier(
-                self.DAYS_IN_ROW_TO_DELTA[OptionType.PUT], self._consecutive_red_days
+                get_put_map(), self._consecutive_red_days
             )
         return -1
 
@@ -93,6 +108,11 @@ class Dte1(Strategy):
             hours=24 * self._dte
         )
         return day
+
+    @property
+    def _vix(self) -> float:
+        vix_symbol = "$VIX.X"
+        return self._broker.quote(vix_symbol)[vix_symbol]['lastPrice']
 
     @property
     def _consecutive_red_days(self) -> int:
