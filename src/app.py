@@ -1,3 +1,4 @@
+from trader import Trader
 from strategies.dte1_ic import Dte1IC
 from utils.common_utils import OrderType
 import watchtower
@@ -28,13 +29,12 @@ def lambda_handler(event=None, context=None):
 
         Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
-
-    try:
-        strategy = Dte1IC(ticker="SPX", order_type=OrderType.CREDIT, buying_power=1000)
-        response = strategy.execute()
-        logging.info(str(response))
-    except Exception as e:
-        logging.error(e)
+    trader = Trader()
+    trader.set_strategies(
+        Dte1IC(ticker="SPX", order_type=OrderType.CREDIT, buying_power=1000)
+    )
+    response = trader.trade()
+    logging.info(str(response))
 
 
 if __name__ == "__main__":

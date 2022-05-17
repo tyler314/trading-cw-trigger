@@ -2,7 +2,7 @@ import datetime
 
 from pytz import timezone
 
-from dto.factories.option_factory import OptionFactory
+from factories.option_factory import OptionFactory
 from strategies.strategy import Strategy
 from tda_api.broker import Broker
 from utils.common_utils import OrderType, OptionType, AssetType
